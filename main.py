@@ -2,6 +2,13 @@ from fastapi import FastAPI
 import yfinance as yf
 import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
+import os
+
+port = int(os.environ.get("PORT", 8000))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
