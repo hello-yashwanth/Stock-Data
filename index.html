@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Stock Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #1e3c72, #2a5298);
+      color: white;
+      text-align: center;
+    }
+
+    h2 {
+      margin-top: 20px;
+      font-weight: 600;
+    }
+
+    .container {
+      margin: 20px auto;
+      width: 90%;
+      max-width: 900px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    select {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    select:hover {
+      transform: scale(1.05);
+    }
+
+    #summary {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      animation: slideUp 0.8s ease;
+    }
+
+    canvas {
+      margin-top: 30px;
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+   button {
+  padding: 10px 15px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #00ffcc;
+  cursor: pointer;
+  font-weight: bold;
+}
+button:hover {
+  transform: scale(1.05);
+}
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+
+</head>
+<body>
+
+<h2>📊 Stock Dashboard</h2>
+<h3>Compare Stocks</h3>
+
+<select id="company1"></select>
+<select id="company2"></select>
+
+<button onclick="compareStocks()">Compare</button>
+<div class="container">
+
+  <label>Select Company:</label><br>
+  <select id="company"></select>
+
+  <div id="summary"></div>
+
+  <canvas id="chart"></canvas>
+
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let chart;
+
+// Load companies
+fetch(API + "/companies")
+  .then(res => res.json())
+  .then(data => {
+    const select = document.getElementById("company");
+
+    data.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.text = c;
+      select.appendChild(opt);
+    });
+
+    loadChart(data[0]);
+    loadSummary(data[0]);
+  });
+
+// Chart
+function loadChart(symbol) {
+  fetch(API + "/data/" + symbol)
+    .then(res => res.json())
+    .then(data => {
+
+      const labels = data.map(d => d.Date);
+      const values = data.map(d => d.Close);
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(document.getElementById("chart"), {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: symbol + " Price",
+            data: values,
+            borderColor: "#00ffcc",
+            backgroundColor: "rgba(0,255,204,0.2)",
+            tension: 0.4
+          }]
+        },
+        options: {
+          animation: {
+            duration: 1000
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: "black"
+              }
+            }
+          }
+        }
+      });
+    });
+}
+// Load companies into both dropdowns
+fetch(API + "/companies")
+  .then(res => res.json())
+  .then(data => {
+
+    const select = document.getElementById("company");
+    const c1 = document.getElementById("company1");
+    const c2 = document.getElementById("company2");
+
+    data.forEach(c => {
+      let opt1 = new Option(c, c);
+      let opt2 = new Option(c, c);
+      let optMain = new Option(c, c);
+
+      select.add(optMain);
+      c1.add(opt1);
+      c2.add(opt2);
+    });
+
+    loadChart(data[0]);
+    loadSummary(data[0]);
+  });
+  function compareStocks() {
+  const s1 = document.getElementById("company1").value;
+  const s2 = document.getElementById("company2").value;
+
+  fetch(`${API}/compare?symbol1=${s1}&symbol2=${s2}`)
+    .then(res => res.json())
+    .then(data => {
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(document.getElementById("chart"), {
+        type: "line",
+        data: {
+          labels: data.dates,
+          datasets: [
+            {
+              label: s1,
+              data: data[s1],
+              borderColor: "red"
+            },
+            {
+              label: s2,
+              data: data[s2],
+              borderColor: "blue"
+            }
+          ]
+        }
+      });
+    });
+}
+// Summary
+function loadSummary(symbol) {
+  fetch(API + "/summary/" + symbol)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("summary").innerHTML = `
+        <h3>📌 Summary</h3>
+        <p><b>📈 High:</b> ${data["52_week_high"]}</p>
+        <p><b>📉 Low:</b> ${data["52_week_low"]}</p>
+        <p><b>📊 Average:</b> ${data["average_close"]}</p>
+      `;
+    });
+}
+
+// Dropdown change
+document.getElementById("company").addEventListener("change", (e) => {
+  const symbol = e.target.value;
+  loadChart(symbol);
+  loadSummary(symbol);
+});
+</script>
+
+</body>
+</html>
