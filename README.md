@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 📊 Stock Data Intelligence Dashboard
 
 A mini financial data platform that fetches stock market data, processes it, and visualizes insights using a simple interactive dashboard.
@@ -27,3 +28,7 @@ A mini financial data platform that fetches stock market data, processes it, and
 ---
 
 ## 📦 Project Structure
+=======
+# Stock-Data
+A stock data dashboard built using FastAPI and Chart.js to visualize stock trends, summaries, and comparisons.
+>>>>>>> 66d3818adb4556bf69a3998ab555769387f26db6
